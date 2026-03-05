@@ -3,7 +3,32 @@
    Maria Gomez / Confección y Tapizados
    ==================================================== */
 
-// ===== EMPRESA INFO (editar aquí si cambia) =====
+// ===== CONFIGURACION FIREBASE (Opcional para Nube) =====
+// El usuario debe reemplazar estos valores con los de su proyecto Firebase
+const firebaseConfig = {
+  apiKey: "REEMPLAZAR_CON_API_KEY",
+  authDomain: "REEMPLAZAR_CON_AUTH_DOMAIN",
+  databaseURL: "REEMPLAZAR_CON_DATABASE_URL",
+  projectId: "REEMPLAZAR_CON_PROJECT_ID",
+  storageBucket: "REEMPLAZAR_CON_STORAGE_BUCKET",
+  messagingSenderId: "REEMPLAZAR_CON_MESSAGING_SENDER_ID",
+  appId: "REEMPLAZAR_CON_APP_ID"
+};
+
+let db = null;
+try {
+  if (firebaseConfig.apiKey !== "REEMPLAZAR_CON_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log("Firebase inicializado correctamente.");
+  } else {
+    console.log("Sincronización de nube desactivada (sin configuración). Usando almacenamiento local.");
+  }
+} catch (e) {
+  console.error("Error inicializando Firebase:", e);
+}
+
+// ===== CONSTANTS & STATE =====
 const EMPRESA = {
   nombre: 'MARIA GOMEZ',
   ruc: 'R.U.C. E8-94-182  *  D.V.: 01',
@@ -44,21 +69,50 @@ function loadPersistedData() {
   // Invoice Number
   const savedNum = localStorage.getItem('mg_invoice_num');
   const numInput = document.getElementById('numero');
-  if (savedNum) {
-    numInput.value = savedNum;
-  } else {
-    numInput.value = '176'; // Default as requested
-    localStorage.setItem('mg_invoice_num', '176');
-  }
 
-  // Client Suggestions
-  const savedClients = JSON.parse(localStorage.getItem('mg_clients') || '[]');
-  updateClientDatalist(savedClients);
+  if (db) {
+    // Attempt cloud sync for number
+    db.ref('settings/invoice_num').once('value', snapshot => {
+      const cloudNum = snapshot.val();
+      if (cloudNum) {
+        numInput.value = cloudNum;
+        localStorage.setItem('mg_invoice_num', cloudNum);
+        updateBadge();
+      } else if (savedNum) {
+        numInput.value = savedNum;
+      } else {
+        numInput.value = '176';
+      }
+    });
+
+    // Attempt cloud sync for clients
+    db.ref('clients').once('value', snapshot => {
+      const cloudClients = snapshot.val();
+      if (cloudClients) {
+        localStorage.setItem('mg_clients', JSON.stringify(cloudClients));
+        updateClientDatalist(cloudClients);
+      }
+    });
+  } else {
+    // Local fallback
+    if (savedNum) {
+      numInput.value = savedNum;
+    } else {
+      numInput.value = '176';
+    }
+    const savedClients = JSON.parse(localStorage.getItem('mg_clients') || '[]');
+    updateClientDatalist(savedClients);
+  }
 }
 
 function saveInvoiceNumber() {
   const num = document.getElementById('numero').value;
   localStorage.setItem('mg_invoice_num', num);
+
+  // Sync to Firebase if available
+  if (db) {
+    db.ref('settings/invoice_num').set(num);
+  }
 }
 
 function saveClient(name) {
@@ -70,6 +124,11 @@ function saveClient(name) {
     clients = clients.slice(0, 15); // Keep last 15
     localStorage.setItem('mg_clients', JSON.stringify(clients));
     updateClientDatalist(clients);
+
+    // Sync to Firebase if available
+    if (db) {
+      db.ref('clients').set(clients);
+    }
   }
 }
 
