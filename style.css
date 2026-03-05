@@ -572,8 +572,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ===== INVOICE PREVIEW (printable) ===== */
 #invoice-print {
-  background: #ffffff;
-  color: #111;
+  background: #ffffff !important;
+  color: #111111 !important;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   width: 100%;
@@ -586,17 +586,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .inv-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   border-bottom: 3px solid #4b3fa0;
   padding-bottom: 18px;
   margin-bottom: 18px;
 }
 
+.inv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.inv-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
 .inv-company h2 {
   font-family: 'Playfair Display', serif;
-  font-size: 22px;
+  font-size: 24px;
   color: #2a1a7a;
   letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
 .inv-company .ruc {
@@ -795,7 +808,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Mobile */
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .app-header {
     padding: 0 14px;
   }

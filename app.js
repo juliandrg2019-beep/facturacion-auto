@@ -302,19 +302,26 @@ function buildInvoiceHTML() {
     ? `<div class="dir">📍 ${escapeHTML(direccion)}</div>`
     : '';
 
+  // Logo Base64 string (Small 3.2KB image)
+  
+  const logoBase64 = "data:image/jpeg;base64,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";
+
   return `
   <div id="invoice-print">
     <div class="inv-header">
-      <div class="inv-company">
-        <h2>${EMPRESA.nombre}</h2>
-        <div class="ruc">${EMPRESA.ruc}</div>
-        <div class="tagline">${EMPRESA.tagline}</div>
-        <div class="ruc" style="margin-top:8px;">📱 ${EMPRESA.celular} &nbsp;|&nbsp; ✉️ ${EMPRESA.email}</div>
+      <div class="inv-header-left">
+        <img src="${logoBase64}" class="inv-logo" alt="Logo" />
+        <div class="inv-company">
+          <h2>${EMPRESA.nombre}</h2>
+          <div class="ruc">${EMPRESA.ruc}</div>
+          <div class="tagline">${EMPRESA.tagline}</div>
+          <div class="ruc" style="margin-top:8px;">${EMPRESA.celular} &nbsp;|&nbsp; ${EMPRESA.email}</div>
+        </div>
       </div>
       <div class="inv-meta">
         <div class="cot-label">Cotización</div>
         <div class="cot-num">No. ${String(numero).padStart(3, '0')}</div>
-        <div class="fecha">📅 ${fechaFmt}</div>
+        <div class="fecha">${fechaFmt}</div>
         <div class="fecha" style="margin-top:4px;color:#555;">Panamá</div>
       </div>
     </div>
@@ -322,7 +329,7 @@ function buildInvoiceHTML() {
     <div class="inv-client-box">
       <div class="lbl">Cliente</div>
       <div class="name">${escapeHTML(cliente)}</div>
-      ${dirHTML}
+      ${direccion ? `<div class="dir">${escapeHTML(direccion)}</div>` : ''}
     </div>
 
     <table class="inv-table">
@@ -361,9 +368,9 @@ function buildInvoiceHTML() {
     </div>
   </div>`;
 }
-
 // ===== SHOW PREVIEW =====
 function showPreview() {
+  console.log("Mostrando vista previa...");
   const cliente = document.getElementById('cliente').value;
   saveClient(cliente);
   document.getElementById('preview-area').innerHTML = buildInvoiceHTML();
@@ -377,21 +384,27 @@ function closeModal() {
 
 // ===== DOWNLOAD PDF =====
 function downloadPDF() {
+  console.log("Iniciando descarga de PDF...");
   const numero = document.getElementById('numero').value || '1';
   let cliente = document.getElementById('cliente').value.trim() || 'Cliente';
   saveClient(cliente);
 
-  // Format filename: COT-NUM-CLIENTE.pdf
-  // Replace spaces and special chars with underscores, but keep it readable
-  const cleanCliente = cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
-  const filename = `COT-${numero}-${cleanCliente}.pdf`;
+  const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`;
 
   // Create temporary container
+  // We use opacity 0.01 and z-index -1 instead of moving off-screen to help some browsers render better
   const wrapper = document.createElement('div');
   wrapper.innerHTML = buildInvoiceHTML();
-  wrapper.style.position = 'fixed';
-  wrapper.style.left = '-9999px';
+  wrapper.style.position = 'absolute';
+  wrapper.style.top = '0';
+  wrapper.style.left = '0';
+  wrapper.style.width = '760px'; // Force same width as preview
+  wrapper.style.opacity = '0.01';
+  wrapper.style.zIndex = '-1000';
+  wrapper.style.pointerEvents = 'none';
   document.body.appendChild(wrapper);
+
+  const target = wrapper.querySelector('#invoice-print');
 
   const opt = {
     margin: [10, 10, 10, 10],
@@ -402,9 +415,16 @@ function downloadPDF() {
     pagebreak: { mode: 'avoid-all' }
   };
 
-  html2pdf().set(opt).from(wrapper.firstChild).save().then(() => {
-    document.body.removeChild(wrapper);
-  });
+  // Add a small delay to ensure content is fully rendered in the DOM
+  setTimeout(() => {
+    html2pdf().set(opt).from(target).save().then(() => {
+      console.log("PDF generado y descargado: " + filename);
+      document.body.removeChild(wrapper);
+    }).catch(err => {
+      console.error("Error al generar PDF:", err);
+      document.body.removeChild(wrapper);
+    });
+  }, 500);
 }
 
 // ===== NUEVA COTIZACION =====
