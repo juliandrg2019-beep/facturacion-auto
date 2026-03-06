@@ -53,10 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dateInput.value = new Date().toISOString().split('T')[0];
   }
 
-  // Start with 3 empty rows if no items
+  // Start with 1 empty row if no items
   if (items.length === 0) {
-    addItem();
-    addItem();
     addItem();
   }
 
@@ -156,7 +154,6 @@ function bindEvents() {
     updateBadge();
     saveInvoiceNumber();
   });
-  document.getElementById('toggle-itbms').addEventListener('change', recalcTotals);
 
   // Close on backdrop click
   document.getElementById('modal-backdrop').addEventListener('click', (e) => {
@@ -167,7 +164,7 @@ function bindEvents() {
 // ===== ADD ITEM =====
 function addItem() {
   const id = nextId++;
-  items.push({ id, cant: '', desc: '', precio: '' });
+  items.push({ id, cant: '', desc: '', precio: '', itbms: '7' });
 
   const container = document.getElementById('items-body');
   const card = document.createElement('div');
@@ -180,11 +177,15 @@ function addItem() {
     </div>
     <div class="item-col item-desc">
       <label class="item-lbl">Descripción</label>
-      <input class="desc-input" type="text" placeholder="Descripción del servicio o producto…" data-id="${id}" data-field="desc" />
+      <textarea class="desc-input" rows="1" placeholder="Descripción del servicio o producto…" data-id="${id}" data-field="desc"></textarea>
     </div>
     <div class="item-col item-price">
       <label class="item-lbl">Precio/U</label>
       <input class="price-input" type="number" min="0" step="0.01" placeholder="0.00" data-id="${id}" data-field="precio" />
+    </div>
+    <div class="item-col item-itbms">
+      <label class="item-lbl">% ITBMS</label>
+      <input class="itbms-input" type="number" min="0" step="any" value="7" data-id="${id}" data-field="itbms" />
     </div>
     <div class="item-col item-total">
       <label class="item-lbl">Total</label>
@@ -196,10 +197,16 @@ function addItem() {
   `;
   container.appendChild(card);
 
-  card.querySelectorAll('input').forEach(inp => {
+  card.querySelectorAll('input, textarea').forEach(inp => {
     inp.addEventListener('input', () => {
       const item = items.find(i => i.id === +inp.dataset.id);
       if (item) item[inp.dataset.field] = inp.value;
+
+      if (inp.tagName.toLowerCase() === 'textarea') {
+        inp.style.height = 'auto';
+        inp.style.height = inp.scrollHeight + 'px';
+      }
+
       recalcTotals();
     });
   });
@@ -220,23 +227,32 @@ function deleteItem(id) {
 // ===== RECALC =====
 function recalcTotals() {
   let subtotal = 0;
+  let totalItbms = 0;
   items.forEach(item => {
-    const cant = parseFloat(item.cant) || 0;
-    const precio = parseFloat(item.precio) || 0;
-    const rowTotal = cant * precio;
-    subtotal += rowTotal;
+    const cantText = item.cant === undefined ? '' : String(item.cant).trim();
+    const cant = cantText === '' ? 1 : (parseFloat(cantText) || 0);
+    const precioText = item.precio === undefined ? '' : String(item.precio).trim();
+    const precio = precioText === '' ? 0 : (parseFloat(precioText) || 0);
+    const itbmsText = item.itbms === undefined ? '7' : String(item.itbms).trim();
+    const itbmsPct = itbmsText === '' ? 0 : (parseFloat(itbmsText) || 0);
+
+    const rowBase = cant * precio;
+    const rowItbms = rowBase * (itbmsPct / 100);
+    const rowTotal = rowBase + rowItbms;
+
+    subtotal += rowBase;
+    totalItbms += rowItbms;
+
     const cell = document.getElementById(`total-row-${item.id}`);
     if (cell) {
       cell.textContent = rowTotal > 0 ? `${EMPRESA.moneda} ${fmt(rowTotal)}` : '—';
     }
   });
 
-  const useITBMS = document.getElementById('toggle-itbms').checked;
-  const itbms = useITBMS ? subtotal * 0.07 : 0;
-  const total = subtotal + itbms;
+  const total = subtotal + totalItbms;
 
   document.getElementById('subtotal-val').textContent = `${EMPRESA.moneda} ${fmt(subtotal)}`;
-  document.getElementById('itbms-val').textContent = `${EMPRESA.moneda} ${fmt(itbms)}`;
+  document.getElementById('itbms-val').textContent = `${EMPRESA.moneda} ${fmt(totalItbms)}`;
   document.getElementById('total-val').textContent = `${EMPRESA.moneda} ${fmt(total)}`;
 }
 
@@ -258,7 +274,6 @@ function buildInvoiceHTML() {
   const cliente = document.getElementById('cliente').value || '—';
   const direccion = document.getElementById('direccion').value;
   const nota = document.getElementById('nota').value;
-  const useITBMS = document.getElementById('toggle-itbms').checked;
 
   // Format date nicely
   const fechaFmt = fecha
@@ -269,28 +284,40 @@ function buildInvoiceHTML() {
   const filledItems = items.filter(i => i.cant || i.desc || i.precio);
   let rowsHTML = '';
   let subtotal = 0;
+  let totalItbms = 0;
 
   filledItems.forEach((item, idx) => {
-    const cant = parseFloat(item.cant) || 0;
-    const precio = parseFloat(item.precio) || 0;
-    const rowTotal = cant * precio;
-    subtotal += rowTotal;
+    const cantText = item.cant === undefined ? '' : String(item.cant).trim();
+    const cant = cantText === '' ? 1 : (parseFloat(cantText) || 0);
+    const precioText = item.precio === undefined ? '' : String(item.precio).trim();
+    const precio = precioText === '' ? 0 : (parseFloat(precioText) || 0);
+    const itbmsText = item.itbms === undefined ? '7' : String(item.itbms).trim();
+    const itbmsPct = itbmsText === '' ? 0 : (parseFloat(itbmsText) || 0);
+
+    const rowBase = cant * precio;
+    const rowItbms = rowBase * (itbmsPct / 100);
+    const rowTotal = rowBase + rowItbms;
+
+    subtotal += rowBase;
+    totalItbms += rowItbms;
+
+    let itbmsTag = itbmsPct > 0 ? ` <span style="font-size:10px; color:#888;">(ITBMS ${itbmsPct}%)</span>` : '';
+
     rowsHTML += `
       <tr>
         <td class="right">${item.cant || ''}</td>
-        <td class="desc">${escapeHTML(item.desc || '')}</td>
+        <td class="desc">${escapeHTML(item.desc || '')}${itbmsTag}</td>
         <td class="right">${precio > 0 ? EMPRESA.moneda + ' ' + fmt(precio) : ''}</td>
         <td class="right" style="font-weight:600;">${rowTotal > 0 ? EMPRESA.moneda + ' ' + fmt(rowTotal) : ''}</td>
       </tr>`;
   });
 
-  const itbms = useITBMS ? subtotal * 0.07 : 0;
-  const total = subtotal + itbms;
+  const total = subtotal + totalItbms;
 
-  const itbmsRow = useITBMS ? `
+  const itbmsRow = totalItbms > 0 ? `
     <div class="inv-totals-row">
-      <span>ITBMS (7%)</span>
-      <span>${EMPRESA.moneda} ${fmt(itbms)}</span>
+      <span>ITBMS</span>
+      <span>${EMPRESA.moneda} ${fmt(totalItbms)}</span>
     </div>` : '';
 
   const notaHTML = nota ? `
@@ -447,13 +474,12 @@ function newCotizacion() {
   document.getElementById('direccion').value = '';
   document.getElementById('nota').value = '';
   document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-  document.getElementById('toggle-itbms').checked = false;
 
   // Clear items
   items = [];
   nextId = 1;
   document.getElementById('items-body').innerHTML = '';
-  addItem(); addItem(); addItem();
+  addItem();
 
   updateBadge();
   recalcTotals();

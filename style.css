@@ -211,7 +211,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ===== ITEMS TABLE HEAD (desktop) ===== */
 .items-table-head {
   display: grid;
-  grid-template-columns: 70px 1fr 110px 110px 36px;
+  grid-template-columns: 60px 1fr 100px 70px 100px 36px;
   gap: 8px;
   padding: 10px 14px;
   background: var(--bg3);
@@ -229,6 +229,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .col-h-price,
+.col-h-itbms,
 .col-h-total {
   text-align: right;
 }
@@ -243,7 +244,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .item-row {
   display: grid;
-  grid-template-columns: 70px 1fr 110px 110px 36px;
+  grid-template-columns: 60px 1fr 100px 70px 100px 36px;
   gap: 8px;
   padding: 8px 14px;
   border-top: 1px solid var(--border);
@@ -281,7 +282,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
 }
 
-.item-col input {
+.item-col input,
+.item-col textarea {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -297,11 +299,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   pointer-events: all;
 }
 
-.item-col input:hover {
+.item-col textarea {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.item-col input:hover,
+.item-col textarea:hover {
   border-color: #4a5070;
 }
 
-.item-col input:focus {
+.item-col input:focus,
+.item-col textarea:focus {
   background: #252a40;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.18);
@@ -312,6 +322,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .cant-input,
+.itbms-input,
 .price-input {
   text-align: right;
 }
@@ -898,19 +909,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     grid-column: 1 / 3;
   }
 
-  .item-total {
+  .item-itbms {
     grid-column: 1;
-    justify-content: flex-start;
+  }
+
+  .item-total {
+    grid-column: 2;
+    align-items: flex-start;
+    justify-content: flex-end;
   }
 
   .item-del {
-    grid-column: 2;
-    align-items: flex-end;
-    justify-content: flex-end;
+    grid-column: 1 / 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
   }
 
   /* Left-align numbers on mobile for readability */
   .cant-input,
+  .itbms-input,
   .price-input {
     text-align: left;
   }
