@@ -408,55 +408,37 @@ function closeModal() {
   document.getElementById('modal-backdrop').classList.remove('open');
 }
 
-// ===== DOWNLOAD PDF =====
+// ===== DOWNLOAD PDF (NATIVE PRINT) =====
 function downloadPDF() {
-  console.log("Iniciando descarga de PDF...");
+  console.log("Iniciando impresión nativa para PDF...");
   const numero = document.getElementById('numero').value || '1';
   let cliente = document.getElementById('cliente').value.trim() || 'Cliente';
   saveClient(cliente);
 
-  const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`;
+  // Instead of html2pdf, we leverage the browser's native print-to-pdf functionality.
+  // This is the absolute perfectly guaranteed way to prevent any random browser cropping.
 
-  // Create temporary container
-  // We use opacity 0.01 and z-index -1 instead of moving off-screen to help some browsers render better
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = buildInvoiceHTML();
-  wrapper.style.position = 'absolute';
-  wrapper.style.top = '0';
-  wrapper.style.left = '0';
-  wrapper.style.width = '760px'; // Force same width as preview
-  wrapper.style.opacity = '0.01';
-  wrapper.style.zIndex = '-1000';
-  wrapper.style.pointerEvents = 'none';
-  document.body.appendChild(wrapper);
+  // 1. Create a dedicated print container
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
 
-  const target = wrapper.querySelector('#invoice-print');
+  // 2. Inject the raw invoice HTML
+  printContainer.innerHTML = buildInvoiceHTML();
 
-  const opt = {
-    margin: [10, 10, 10, 10],
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      scrollY: 0,
-      windowWidth: 760
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: 'avoid-all' }
-  };
+  // 3. Set document title temporarily so the default saved PDF name is correct
+  const originalTitle = document.title;
+  document.title = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  // Add a small delay to ensure content is fully rendered in the DOM
-  setTimeout(() => {
-    html2pdf().set(opt).from(target).save().then(() => {
-      console.log("PDF generado y descargado: " + filename);
-      document.body.removeChild(wrapper);
-    }).catch(err => {
-      console.error("Error al generar PDF:", err);
-      document.body.removeChild(wrapper);
-    });
-  }, 500);
+  // 4. Trigger native print dialogue (User can select "Save as PDF" / "Guardar como PDF")
+  window.print();
+
+  // 5. Restore title and cleanup
+  document.title = originalTitle;
+  printContainer.innerHTML = '';
 }
 
 // ===== NUEVA COTIZACION =====
