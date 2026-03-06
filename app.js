@@ -408,37 +408,58 @@ function closeModal() {
   document.getElementById('modal-backdrop').classList.remove('open');
 }
 
-// ===== DOWNLOAD PDF (NATIVE PRINT) =====
+// ===== DOWNLOAD PDF (HIDDEN SANDBOX) =====
 function downloadPDF() {
-  console.log("Iniciando impresión nativa para PDF...");
+  console.log("Iniciando generación de PDF (Sandbox)...");
   const numero = document.getElementById('numero').value || '1';
   let cliente = document.getElementById('cliente').value.trim() || 'Cliente';
   saveClient(cliente);
 
-  // Instead of html2pdf, we leverage the browser's native print-to-pdf functionality.
-  // This is the absolute perfectly guaranteed way to prevent any random browser cropping.
+  const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`;
 
-  // 1. Create a dedicated print container
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
+  // 1. Create a hidden sandbox container forced to desktop width
+  const sandbox = document.createElement('div');
+  sandbox.className = 'pdf-rendering-mode';
+  sandbox.style.position = 'fixed';
+  sandbox.style.top = '0';
+  sandbox.style.left = '0';
+  sandbox.style.width = '800px'; // Desktop width
+  sandbox.style.height = 'auto';
+  sandbox.style.opacity = '0';
+  sandbox.style.pointerEvents = 'none';
+  sandbox.style.zIndex = '-9999';
 
-  // 2. Inject the raw invoice HTML
-  printContainer.innerHTML = buildInvoiceHTML();
+  // 2. Inject the invoice HTML
+  sandbox.innerHTML = buildInvoiceHTML();
+  document.body.appendChild(sandbox);
 
-  // 3. Set document title temporarily so the default saved PDF name is correct
-  const originalTitle = document.title;
-  document.title = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const target = sandbox.querySelector('#invoice-print');
 
-  // 4. Trigger native print dialogue (User can select "Save as PDF" / "Guardar como PDF")
-  window.print();
+  // 3. Configure html2pdf with explicit windowWidth to simulate desktop viewport
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      windowWidth: 800, // Forces html2canvas to "think" it's on a desktop screen
+      scrollY: 0
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
 
-  // 5. Restore title and cleanup
-  document.title = originalTitle;
-  printContainer.innerHTML = '';
+  // Give a tiny moment for the DOM to settle inside the sandbox
+  setTimeout(() => {
+    html2pdf().set(opt).from(target).save().then(() => {
+      console.log("PDF generado y descargando exitosamente.");
+      document.body.removeChild(sandbox);
+    }).catch(err => {
+      console.error("Error al generar PDF:", err);
+      if (document.body.contains(sandbox)) document.body.removeChild(sandbox);
+    });
+  }, 100);
 }
 
 // ===== NUEVA COTIZACION =====
