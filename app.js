@@ -389,9 +389,8 @@ function buildInvoiceHTML() {
 
     ${notaHTML}
 
-    <div class="inv-footer">
+    <div class="inv-footer" style="padding-top: 20px;">
       ${EMPRESA.nombre} &nbsp;·&nbsp; ${EMPRESA.celular} &nbsp;·&nbsp; ${EMPRESA.email}
-      <br/>Esta cotización no constituye una factura legal.
     </div>
   </div>`;
 }
