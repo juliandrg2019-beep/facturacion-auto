@@ -52,7 +52,7 @@ function loadPersistedData() {
   const savedNum = localStorage.getItem('mg_invoice_num');
   const numInput = document.getElementById('numero');
 
-  if (savedNum) {
+  if (savedNum && parseInt(savedNum, 10) >= 180) {
     numInput.value = savedNum;
   } else {
     numInput.value = '180';
