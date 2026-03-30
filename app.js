@@ -55,7 +55,7 @@ function loadPersistedData() {
   if (savedNum) {
     numInput.value = savedNum;
   } else {
-    numInput.value = '176';
+    numInput.value = '180';
   }
   const savedClients = JSON.parse(localStorage.getItem('mg_clients') || '[]');
   updateClientDatalist(savedClients);
