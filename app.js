@@ -3,29 +3,13 @@
    Maria Gomez / Confección y Tapizados
    ==================================================== */
 
-// ===== CONFIGURACION FIREBASE (Opcional para Nube) =====
-// El usuario debe reemplazar estos valores con los de su proyecto Firebase
-const firebaseConfig = {
-  apiKey: "REEMPLAZAR_CON_API_KEY",
-  authDomain: "REEMPLAZAR_CON_AUTH_DOMAIN",
-  databaseURL: "REEMPLAZAR_CON_DATABASE_URL",
-  projectId: "REEMPLAZAR_CON_PROJECT_ID",
-  storageBucket: "REEMPLAZAR_CON_STORAGE_BUCKET",
-  messagingSenderId: "REEMPLAZAR_CON_MESSAGING_SENDER_ID",
-  appId: "REEMPLAZAR_CON_APP_ID"
-};
 
-let db = null;
-try {
-  if (firebaseConfig.apiKey !== "REEMPLAZAR_CON_API_KEY") {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    console.log("Firebase inicializado correctamente.");
-  } else {
-    console.log("Sincronización de nube desactivada (sin configuración). Usando almacenamiento local.");
+
+// ===== UI HELPERS =====
+function triggerHaptic() {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(40); } catch(e) {}
   }
-} catch (e) {
-  console.error("Error inicializando Firebase:", e);
 }
 
 // ===== CONSTANTS & STATE =====
@@ -68,49 +52,18 @@ function loadPersistedData() {
   const savedNum = localStorage.getItem('mg_invoice_num');
   const numInput = document.getElementById('numero');
 
-  if (db) {
-    // Attempt cloud sync for number
-    db.ref('settings/invoice_num').once('value', snapshot => {
-      const cloudNum = snapshot.val();
-      if (cloudNum) {
-        numInput.value = cloudNum;
-        localStorage.setItem('mg_invoice_num', cloudNum);
-        updateBadge();
-      } else if (savedNum) {
-        numInput.value = savedNum;
-      } else {
-        numInput.value = '176';
-      }
-    });
-
-    // Attempt cloud sync for clients
-    db.ref('clients').once('value', snapshot => {
-      const cloudClients = snapshot.val();
-      if (cloudClients) {
-        localStorage.setItem('mg_clients', JSON.stringify(cloudClients));
-        updateClientDatalist(cloudClients);
-      }
-    });
+  if (savedNum) {
+    numInput.value = savedNum;
   } else {
-    // Local fallback
-    if (savedNum) {
-      numInput.value = savedNum;
-    } else {
-      numInput.value = '176';
-    }
-    const savedClients = JSON.parse(localStorage.getItem('mg_clients') || '[]');
-    updateClientDatalist(savedClients);
+    numInput.value = '176';
   }
+  const savedClients = JSON.parse(localStorage.getItem('mg_clients') || '[]');
+  updateClientDatalist(savedClients);
 }
 
 function saveInvoiceNumber() {
   const num = document.getElementById('numero').value;
   localStorage.setItem('mg_invoice_num', num);
-
-  // Sync to Firebase if available
-  if (db) {
-    db.ref('settings/invoice_num').set(num);
-  }
 }
 
 function saveClient(name) {
@@ -122,11 +75,6 @@ function saveClient(name) {
     clients = clients.slice(0, 15); // Keep last 15
     localStorage.setItem('mg_clients', JSON.stringify(clients));
     updateClientDatalist(clients);
-
-    // Sync to Firebase if available
-    if (db) {
-      db.ref('clients').set(clients);
-    }
   }
 }
 
@@ -163,8 +111,9 @@ function bindEvents() {
 
 // ===== ADD ITEM =====
 function addItem() {
+  triggerHaptic();
   const id = nextId++;
-  items.push({ id, cant: '', desc: '', precio: '', itbms: '7' });
+  items.push({ id, cant: '', desc: '', precio: '', itbms: '' });
 
   const container = document.getElementById('items-body');
   const card = document.createElement('div');
@@ -173,7 +122,7 @@ function addItem() {
   card.innerHTML = `
     <div class="item-col item-cant">
       <label class="item-lbl">Cant.</label>
-      <input class="cant-input" type="number" min="0" step="any" placeholder="1" data-id="${id}" data-field="cant" />
+      <input class="cant-input" type="number" min="0" step="any" placeholder="1" data-id="${id}" data-field="cant" inputmode="decimal" />
     </div>
     <div class="item-col item-desc">
       <label class="item-lbl">Descripción</label>
@@ -181,11 +130,11 @@ function addItem() {
     </div>
     <div class="item-col item-price">
       <label class="item-lbl">Precio/U</label>
-      <input class="price-input" type="number" min="0" step="0.01" placeholder="0.00" data-id="${id}" data-field="precio" />
+      <input class="price-input" type="number" min="0" step="0.01" placeholder="0.00" data-id="${id}" data-field="precio" inputmode="decimal" />
     </div>
     <div class="item-col item-itbms">
       <label class="item-lbl">% ITBMS</label>
-      <input class="itbms-input" type="number" min="0" step="any" value="7" data-id="${id}" data-field="itbms" />
+      <input class="itbms-input" type="number" min="0" step="any" placeholder="0" data-id="${id}" data-field="itbms" inputmode="decimal" />
     </div>
     <div class="item-col item-total">
       <label class="item-lbl">Total</label>
@@ -217,6 +166,7 @@ function addItem() {
 
 // ===== DELETE ITEM =====
 function deleteItem(id) {
+  triggerHaptic();
   if (items.length <= 1) return;
   items = items.filter(i => i.id !== id);
   const card = document.querySelector(`.item-row[data-id="${id}"]`);
@@ -233,7 +183,7 @@ function recalcTotals() {
     const cant = cantText === '' ? 1 : (parseFloat(cantText) || 0);
     const precioText = item.precio === undefined ? '' : String(item.precio).trim();
     const precio = precioText === '' ? 0 : (parseFloat(precioText) || 0);
-    const itbmsText = item.itbms === undefined ? '7' : String(item.itbms).trim();
+    const itbmsText = item.itbms === undefined ? '' : String(item.itbms).trim();
     const itbmsPct = itbmsText === '' ? 0 : (parseFloat(itbmsText) || 0);
 
     const rowBase = cant * precio;
@@ -291,7 +241,7 @@ function buildInvoiceHTML() {
     const cant = cantText === '' ? 1 : (parseFloat(cantText) || 0);
     const precioText = item.precio === undefined ? '' : String(item.precio).trim();
     const precio = precioText === '' ? 0 : (parseFloat(precioText) || 0);
-    const itbmsText = item.itbms === undefined ? '7' : String(item.itbms).trim();
+    const itbmsText = item.itbms === undefined ? '' : String(item.itbms).trim();
     const itbmsPct = itbmsText === '' ? 0 : (parseFloat(itbmsText) || 0);
 
     const rowBase = cant * precio;
@@ -336,9 +286,7 @@ function buildInvoiceHTML() {
   return `
   <style>
     @media print {
-      .inv-table { page-break-inside: avoid; break-inside: avoid; }
       .inv-table tr { page-break-inside: avoid; break-inside: avoid; }
-      .inv-table td { page-break-inside: avoid; break-inside: avoid; }
       .inv-header, .inv-client-box, .inv-totals, .inv-note-box { page-break-inside: avoid; break-inside: avoid; }
       #invoice-print { padding: 0 !important; }
     }
@@ -417,65 +365,63 @@ function closeModal() {
   document.getElementById('modal-backdrop').classList.remove('open');
 }
 
-// ===== DOWNLOAD PDF (HIDDEN SANDBOX) =====
+// ===== DOWNLOAD PDF (NATIVE PRINT - 100% FIABLE) =====
 function downloadPDF() {
-  console.log("Iniciando generación de PDF (Sandbox)...");
+  triggerHaptic();
+  console.log("Iniciando impresión nativa de PDF...");
   const numero = document.getElementById('numero').value || '1';
   let cliente = document.getElementById('cliente').value.trim() || 'Cliente';
   saveClient(cliente);
 
-  const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}.pdf`;
+  const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  // 1. Create a hidden sandbox container forced to desktop width
-  const sandbox = document.createElement('div');
-  sandbox.className = 'pdf-rendering-mode';
-  sandbox.style.position = 'fixed';
-  sandbox.style.top = '0';
-  sandbox.style.left = '0';
-  sandbox.style.width = '800px'; // Desktop width
-  sandbox.style.height = 'auto';
-  sandbox.style.opacity = '0';
-  sandbox.style.pointerEvents = 'none';
-  sandbox.style.zIndex = '-9999';
+  // 1. Ocultar la UI de la aplicación temporalmente
+  const appHeader = document.querySelector('.app-header');
+  const appContainer = document.querySelector('.container');
+  const modales = document.querySelectorAll('.modal-backdrop');
+  
+  if (appHeader) appHeader.style.display = 'none';
+  if (appContainer) appContainer.style.display = 'none';
+  modales.forEach(m => m.classList.remove('open'));
 
-  // 2. Inject the invoice HTML
-  sandbox.innerHTML = buildInvoiceHTML();
-  document.body.appendChild(sandbox);
+  // 2. Inyectar el documento listo para imprimir en el body
+  const printWrapper = document.createElement('div');
+  printWrapper.id = 'native-print-wrapper';
+  printWrapper.className = 'pdf-rendering-mode'; 
+  printWrapper.style.width = '100%';
+  printWrapper.style.maxWidth = '800px';
+  printWrapper.style.margin = '0 auto';
+  printWrapper.style.backgroundColor = '#ffffff';
+  printWrapper.style.minHeight = '100vh';
+  printWrapper.innerHTML = buildInvoiceHTML();
+  
+  document.body.appendChild(printWrapper);
+  const oldBg = document.body.style.background;
+  document.body.style.background = '#ffffff';
 
-  const target = sandbox.querySelector('#invoice-print');
+  // 3. Cambiar nombre del documento para que el PDF se guarde con ese título exacto
+  const originalTitle = document.title;
+  document.title = filename;
 
-  // 3. Configure html2pdf with explicit windowWidth to simulate desktop viewport
-  const opt = {
-    margin: [15, 15, 15, 15],
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      windowWidth: 800, // Forces html2canvas to "think" it's on a desktop screen
-      scrollY: 0,
-      logging: false
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-  };
-
-  // Give a tiny moment for the DOM to settle inside the sandbox
+  // 4. Invocar el diálogo de impresión nativo del sistema
+  // Esto pausa la ejecución hasta que el usuario imprima o cancele en su Mac/PC.
   setTimeout(() => {
-    html2pdf().set(opt).from(target).save().then(() => {
-      console.log("PDF generado y descargando exitosamente.");
-      document.body.removeChild(sandbox);
-    }).catch(err => {
-      console.error("Error al generar PDF:", err);
-      if (document.body.contains(sandbox)) document.body.removeChild(sandbox);
-    });
+    window.print();
+    
+    // 5. Restaurar todo inmediatamente al regresar
+    document.title = originalTitle;
+    document.body.removeChild(printWrapper);
+    document.body.style.background = oldBg;
+    
+    if (appHeader) appHeader.style.display = '';
+    if (appContainer) appContainer.style.display = '';
   }, 100);
 }
 
 // ===== NUEVA COTIZACION =====
 function newCotizacion() {
-  if (!confirm('¿Crear una nueva cotización? Se perderán los datos actuales.')) return;
+  triggerHaptic();
+  if (!confirm('¿Estás seguro de iniciar una nueva cotización? Se borrarán los datos actuales.')) return;
 
   // Increment number
   const numInput = document.getElementById('numero');
