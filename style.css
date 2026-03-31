@@ -841,18 +841,31 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 
   .app-header-inner {
-    height: 56px;
+    height: 64px;
+    gap: 8px;
   }
 
   .brand-icon {
-    font-size: 22px;
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
   }
 
   .brand h1 {
-    font-size: 15px;
+    font-size: 14px;
+    white-space: nowrap;
   }
 
   .brand p {
+    display: none;
+  }
+  
+  #btn-nueva {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  #btn-nueva .btn-text {
     display: none;
   }
 
