@@ -837,7 +837,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 /* Mobile */
 @media (max-width: 480px) {
   .app-header {
-    padding: 0 14px;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 14px 6px;
   }
 
   .app-header-inner {
