@@ -606,6 +606,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   box-sizing: border-box;
 }
 
+#print-area {
+  display: none;
+}
+
 .inv-header {
   display: flex;
   justify-content: space-between;
@@ -1076,7 +1080,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 
   /* Make sure print container is visible and styled properly */
-  #print-container {
+  #print-area {
     display: block !important;
     position: absolute;
     top: 0;

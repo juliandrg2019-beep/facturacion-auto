@@ -375,47 +375,32 @@ function downloadPDF() {
 
   const filename = `COT-${numero}-${cliente.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
-  // 1. Ocultar la UI de la aplicación temporalmente
-  const appHeader = document.querySelector('.app-header');
-  const appContainer = document.querySelector('.container');
-  const modales = document.querySelectorAll('.modal-backdrop');
+  // 1. Obtener el contenedor de impresión y poblarlo
+  const printArea = document.getElementById('print-area');
+  if (!printArea) {
+    console.error("No se encontró el contenedor #print-area");
+    return;
+  }
   
-  if (appHeader) appHeader.style.display = 'none';
-  if (appContainer) appContainer.style.display = 'none';
-  modales.forEach(m => m.classList.remove('open'));
-
-  // 2. Inyectar el documento listo para imprimir en el body
-  const printWrapper = document.createElement('div');
-  printWrapper.id = 'native-print-wrapper';
-  printWrapper.className = 'pdf-rendering-mode'; 
-  printWrapper.style.width = '100%';
-  printWrapper.style.maxWidth = '800px';
-  printWrapper.style.margin = '0 auto';
-  printWrapper.style.backgroundColor = '#ffffff';
-  printWrapper.style.minHeight = '100vh';
-  printWrapper.innerHTML = buildInvoiceHTML();
+  // Limpiar y agregar el contenido
+  printArea.innerHTML = buildInvoiceHTML();
   
-  document.body.appendChild(printWrapper);
-  const oldBg = document.body.style.background;
-  document.body.style.background = '#ffffff';
+  // Cerrar modales si están abiertos para no interferir
+  closeModal();
 
-  // 3. Cambiar nombre del documento para que el PDF se guarde con ese título exacto
+  // 2. Cambiar nombre del documento para que el PDF se guarde con ese título exacto
   const originalTitle = document.title;
   document.title = filename;
 
-  // 4. Invocar el diálogo de impresión nativo del sistema
-  // Esto pausa la ejecución hasta que el usuario imprima o cancele en su Mac/PC.
+  // 3. Invocar el diálogo de impresión nativo del sistema
+  // El CSS (@media print) se encargará de ocultar la UI y mostrar solo el printArea
   setTimeout(() => {
     window.print();
     
-    // 5. Restaurar todo inmediatamente al regresar
+    // 4. Restaurar el título y limpiar (opcional)
     document.title = originalTitle;
-    document.body.removeChild(printWrapper);
-    document.body.style.background = oldBg;
-    
-    if (appHeader) appHeader.style.display = '';
-    if (appContainer) appContainer.style.display = '';
-  }, 100);
+    // No limpiamos el printArea inmediatamente por si el navegador lo necesita para el renderizado
+  }, 250);
 }
 
 // ===== NUEVA COTIZACION =====
